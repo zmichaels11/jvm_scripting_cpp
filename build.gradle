@@ -1,0 +1,47 @@
+apply plugin: "java"
+apply plugin: "cpp"
+
+wrapper {
+    gradleVersion = "4.8"
+}
+
+model {
+    toolChains {
+        gcc(Gcc) {
+            eachPlatform {
+                cppCompiler.withArguments { args ->
+                    args << "-std=c++14"
+                }    
+            }
+        }
+    }
+
+    repositories {
+        libs (PrebuiltLibraries) {
+            jvm {
+                headers.srcDirs "$JAVA_HOME/include", "$JAVA_HOME/include/linux", "$JAVA_HOME/include/win32"
+            }
+        }
+    }
+
+    components {
+        nativeExe (NativeExecutableSpec) {
+            sources {
+                cpp {
+                    lib library: "jvm", linkage: "api"
+                    
+                    source {
+                        srcDirs "src/main/cpp"
+                        include "**/*.cpp"
+                    }
+                }
+            }
+
+            binaries.all {
+                if (targetPlatform.operatingSystem.linux) {
+                    linker.args << "-ldl"
+                }
+            }
+        }
+    }
+}
