@@ -1,5 +1,6 @@
 # Java as a Scripting Language in C++
-Demo loads a Java jar at Runtime and demonstrates executing Java code as well as re-entry.
+Demo loads a Java jar at Runtime and demonstrates executing Java code from C++ 
+as well as C++ re-entry from Java.
 
 # Requirements
 * java 8+
