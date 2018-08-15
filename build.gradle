@@ -5,17 +5,15 @@ wrapper {
     gradleVersion = "4.8"
 }
 
-model {
-    toolChains {
-        gcc(Gcc) {
-            eachPlatform {
-                cppCompiler.withArguments { args ->
-                    args << "-std=c++14"
-                }    
-            }
-        }
-    }
+task generateRT(type: Exec) {
+    executable "jlink"
+    args "--add-modules"
+    args "java.base"
+    args "--output"
+    args "rt"
+}
 
+model {
     repositories {
         libs (PrebuiltLibraries) {
             jvm {
@@ -38,6 +36,12 @@ model {
             }
 
             binaries.all {
+                if (toolChain instanceof Gcc || toolChain instanceof Clang) {
+                    cppCompiler.args << "-std=c++14"
+                } else if (toolChain instanceof VisualCpp) {
+                    cppCompiler.args << "/std:c++14"
+                }
+
                 if (targetPlatform.operatingSystem.linux) {
                     linker.args << "-ldl"
                 }

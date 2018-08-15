@@ -1,7 +1,12 @@
 #include <cstddef>
 
-#include <dlfcn.h>
 #include <jni.h>
+
+#ifdef _WIN32
+#   include <windows.h>
+#else
+#   include <dlfcn.h>
+#endif
 
 #include <iostream>
 #include <stdexcept>
@@ -52,23 +57,34 @@ int main(int argc, char** argv) {
         std::cout << "Op: " << op.optionString << std::endl;
     }
 
-    // this function is specific to Linux
-    auto pJVMLib = dlopen("libjvm.so", RTLD_NOW);
+    // fetch the CreateJVM function
+#   ifdef _WIN32
+        auto pJVMLib = LoadLibraryA("jvm.dll");
 
-    {
-        auto error = dlerror();
-
-        if (error) {
-            throw std::runtime_error(error);
+        if (!pJVMLib) {
+            throw std::runtime_error("Unable to load jvm.dll!");
         }
-    }
+
+        auto pfnJNI_CreateJVM = reinterpret_cast<CreateJvmFuncPtr> (GetProcAddress(pJVMLib, "JNI_CreateJavaVM"));
+#   else
+        auto pJVMLib = dlopen("libjvm.so", RTLD_NOW);
+
+        {
+            auto error = dlerror();
+
+            if (error) {
+                throw std::runtime_error(error);
+            }
+        }
+
+        auto pfnJNI_CreateJVM = reinterpret_cast<CreateJvmFuncPtr> (dlsym(pJVMLib, "JNI_CreateJavaVM"));
+#   endif
 
     JavaVM* pJavaVM = nullptr;
     JNIEnv* pJNIEnv = nullptr;
 
     // Create the JavaVM and JNI Environment
     //TODO: check if JNI must be executed on the thread the JVM was created.
-    auto pfnJNI_CreateJVM = reinterpret_cast<CreateJvmFuncPtr> (dlsym(pJVMLib, "JNI_CreateJavaVM"));
     auto flag = pfnJNI_CreateJVM(&pJavaVM, reinterpret_cast<void**> (&pJNIEnv), &jvmArgs);
 
     if (JNI_ERR == flag) {
@@ -121,7 +137,12 @@ int main(int argc, char** argv) {
     }
 
     pJavaVM->DestroyJavaVM();
-    dlclose(pJVMLib);
+
+#   ifdef _WIN32
+        FreeLibrary(pJVMLib);
+#   else
+        dlclose(pJVMLib);
+#   endif
     
     return 0;
 }
