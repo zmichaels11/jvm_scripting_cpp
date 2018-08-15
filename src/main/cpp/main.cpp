@@ -122,4 +122,6 @@ int main(int argc, char** argv) {
 
     pJavaVM->DestroyJavaVM();
     dlclose(pJVMLib);
+    
+    return 0;
 }
