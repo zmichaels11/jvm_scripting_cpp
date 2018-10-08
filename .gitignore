@@ -89,3 +89,6 @@ gradle-app.setting
 
 \.vscode/settings\.json
 rt
+.classpath
+.project
+.settings/*
